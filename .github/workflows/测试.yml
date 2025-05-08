@@ -209,10 +209,10 @@ jobs:
       SUSFS_ENABLED: ${{ inputs.SUSFS_ENABLED }}
       VFS_patch_ENABLED: ${{ inputs.VFS_patch_ENABLED }}
       
-    build-kernel-oneplus13:
-    uses: ./.github/workflows/oneplus13整合.yml
-    secrets: inherit
-    with:
+  build-kernel-oneplus13:
+     uses: ./.github/workflows/oneplus13整合.yml
+     secrets: inherit
+     with:
       CPU: ${{ inputs.CPU }}
       FEIL: ${{ inputs.FEIL }}
       CPUD: ${{ inputs.CPUD }}
