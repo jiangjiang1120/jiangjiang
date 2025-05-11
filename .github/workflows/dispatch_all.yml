@@ -21,6 +21,7 @@ jobs:
             "oneplus12.yml"
             "oneplus12r.yml"
             "oneplus13整合.yml"
+            "oneplus13t整合.yml"
             "padpro.yml"
           )
 
