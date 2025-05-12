@@ -248,7 +248,7 @@ jobs:
 
       - name: 压缩 AnyKernel3 目录为 zip
         run: |
-         zip -r AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip AnyKernel3
+         zip -r AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip ./AnyKernel3/
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
@@ -259,6 +259,6 @@ jobs:
           prerelease: true
           files: |
             AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip
-            kernel_workspace/kernel/*
+            kernel_workspace/kernel
             env:
             GITHUB_TOKEN: ${{ secrets.TOKEN }}
