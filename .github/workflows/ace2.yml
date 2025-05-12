@@ -251,11 +251,6 @@ jobs:
         env:
           KSUVER: KernelSU
 
-      - name: 查看压缩包内容
-        run: unzip -l ${{ env.KSUVER }}_ace2.zip
-        env:
-          KSUVER: KernelSU
-
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
         with:
