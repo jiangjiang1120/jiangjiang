@@ -268,7 +268,7 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ./AnyKernel3/*
-            kernel_workspace/kernel/*
+            ./AnyKernel3
+            kernel_workspace/kernel
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
