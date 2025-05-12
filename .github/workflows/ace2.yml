@@ -247,8 +247,7 @@ jobs:
           fi
       - name: 创建压缩包
         run: |
-         cd kernel_workspace
-         zip -r -j ../${{ env.KSUVER }}_ace2.zip AnyKernel3/
+         zip -r -j ../${{ env.KSUVER }}_ace2.zip ./AnyKernel3/
          env:
          KSUVER: KernelSU
 
