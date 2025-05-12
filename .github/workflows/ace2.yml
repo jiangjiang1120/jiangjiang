@@ -246,19 +246,9 @@ jobs:
             cp kernel_workspace/out/dist/Image ./kernel_workspace/kernel
           fi
 
-         
-         
-      - name: Upload AnyKernel3
-        uses: actions/upload-artifact@v4
-        with:
-         name: AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2
-         path: ./AnyKernel3/*
-
-      - name: Upload Image
-        uses: actions/upload-artifact@v4
-        with:
-         name: Image_KernelSU_${{ env.KSUVER }}_ace2
-         path: kernel_workspace/kernel
+      - name: 压缩 AnyKernel3 目录为 zip
+        run: |
+         zip -r AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip AnyKernel3
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
@@ -268,7 +258,7 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            ./AnyKernel3
-            kernel_workspace/kernel
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+            AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip
+            kernel_workspace/kernel/*
+            env:
+            GITHUB_TOKEN: ${{ secrets.TOKEN }}
