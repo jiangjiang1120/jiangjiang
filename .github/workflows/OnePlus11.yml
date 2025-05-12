@@ -265,8 +265,8 @@ jobs:
       - name: 创建压缩包（保留 AnyKernel3 文件夹结构）
         run: |
           cd kernel_workspace/kernel_platform/dist
-          cd AnyKernel3-no_kpm && zip -r ../AnyKernel3_${{ env.KSUVER }}_oneplus11.zip ./*
-          cd AnyKernel3-kpm && zip -r ../AnyKernel3_${{ env.KSUVER }}_oneplus11.zip ./*
+          zip -r AnyKernel3-no_kpm_${{ env.KSUVER }}_oneplus11.zip AnyKernel3-no_kpm/*
+          zip -r AnyKernel3-kpm_${{ env.KSUVER }}_oneplus11.zip AnyKernel3-kpm/*
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
