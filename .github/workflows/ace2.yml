@@ -235,7 +235,6 @@ jobs:
          
       - name: Make AnyKernel3
         run: |
-          # 克隆 AnyKernel3 仓库
           git clone https://github.com/Kernel-SU/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           if [[ "${{ inputs.CPU }}" == "sm8650" ]]; then
@@ -245,11 +244,12 @@ jobs:
             cp kernel_workspace/out/dist/Image ./AnyKernel3/
             cp kernel_workspace/out/dist/Image ./kernel_workspace/kernel
           fi
+
       - name: 创建压缩包
         run: |
-         zip -r -j ../${{ env.KSUVER }}_ace2.zip ./AnyKernel3/
-         env:
-         KSUVER: KernelSU
+          zip -r -j ../${{ env.KSUVER }}_ace2.zip ./AnyKernel3/
+        env:
+          KSUVER: KernelSU
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
@@ -262,5 +262,5 @@ jobs:
           files: |
             ${{ env.KSUVER }}_ace2.zip
         env:
-            GITHUB_TOKEN: ${{ secrets.TOKEN }}
-            KSUVER: KernelSU
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          KSUVER: KernelSU
