@@ -256,7 +256,7 @@ jobs:
           tag_name: ace2
           name:  Build for Ace2
           draft: false
-          prerelease: true
+          prerelease: false
           files: |
             AnyKernel3_KernelSU_${{ env.KSUVER }}_ace2.zip
             kernel_workspace/kernel
