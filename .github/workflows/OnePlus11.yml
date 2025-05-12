@@ -260,12 +260,12 @@ jobs:
         run: |
          cd kernel_workspace/kernel_platform/dist
          cp Image AnyKernel3-no_kpm/Image       
-         cp Image_kpm AnyKernel3_kpm/Image
+         cp Image_kpm AnyKernel3-kpm/Image
             
       - name: 创建压缩包（保留 AnyKernel3 文件夹结构）
         run: |
           cd AnyKernel3-no_kpm && zip -r ../AnyKernel3_${{ env.KSUVER }}_oneplus11.zip ./*
-          cd AnyKernel3_kpm && zip -r ../AnyKernel3_${{ env.KSUVER }}_oneplus11.zip ./*
+          cd AnyKernel3-kpm && zip -r ../AnyKernel3_${{ env.KSUVER }}_oneplus11.zip ./*
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
@@ -277,6 +277,6 @@ jobs:
           prerelease: false
           files: |
             AnyKernel3-no_kpm_${{ env.KSUVER }}_oneplus11.zip
-            AnyKernel3_kpm_${{ env.KSUVER }}_oneplus11.zip
+            AnyKernel3-kpm_${{ env.KSUVER }}_oneplus11.zip
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
