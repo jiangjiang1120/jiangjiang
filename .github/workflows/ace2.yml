@@ -247,7 +247,13 @@ jobs:
 
       - name: 创建压缩包
         run: |
-          zip -r -j ../${{ env.KSUVER }}_ace2.zip ./AnyKernel3/
+          cd AnyKernel3
+          zip -r -j ../${{ env.KSUVER }}_ace2.zip ./*
+        env:
+          KSUVER: KernelSU
+
+      - name: 查看压缩包内容
+        run: unzip -l ${{ env.KSUVER }}_ace2.zip
         env:
           KSUVER: KernelSU
 
