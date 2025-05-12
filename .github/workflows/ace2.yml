@@ -257,6 +257,7 @@ jobs:
         with:
           tag_name: ace2
           name: Build for Ace2
+          body: sukisu，不带kpm，带lz4kd
           draft: false
           prerelease: false
           files: |
