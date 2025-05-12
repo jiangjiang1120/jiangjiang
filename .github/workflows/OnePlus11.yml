@@ -277,7 +277,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            AnyKernel3-no_kpm_${{ env.KSUVER }}_oneplus11.zip
-            AnyKernel3-kpm_${{ env.KSUVER }}_oneplus11.zip
+            kernel_workspace/kernel_platform/dist/AnyKernel3-no_kpm_${{ env.KSUVER }}_oneplus11.zip
+            kernel_workspace/kernel_platform/dist/AnyKernel3-kpm_${{ env.KSUVER }}_oneplus11.zip
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
