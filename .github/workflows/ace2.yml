@@ -247,7 +247,7 @@ jobs:
 
       - name: 创建压缩包（保留 AnyKernel3 文件夹结构）
         run: |
-          zip -r AnyKernel3_${{ env.KSUVER }}_ace2.zip AnyKernel3
+          cd AnyKernel3 && zip -r ../AnyKernel3_${{ env.KSUVER }}_ace2.zip ./*
 
       - name: 创建并上传 Release
         uses: softprops/action-gh-release@v1
