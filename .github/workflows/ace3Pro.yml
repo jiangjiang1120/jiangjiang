@@ -262,14 +262,23 @@ jobs:
          cp Image AnyKernel3-no_kpm/Image       
          cp Image_kpm AnyKernel3-kpm/Image
             
-      - name: Upload AnyKernel3 (no_KPM)
-        uses: actions/upload-artifact@v4
+      - name: 创建压缩包（保留 AnyKernel3 文件夹结构）
+        run: |
+          cd kernel_workspace/kernel_platform/dist
+          cd AnyKernel3-no_kpm && zip -r ../AnyKernel3-no_kpm_${{ env.KSUVER }}_ace3Pro.zip . && cd ..
+          cd AnyKernel3-kpm && zip -r ../AnyKernel3-kpm_${{ env.KSUVER }}_ace3Pro.zip . && cd ..
+
+
+      - name: 创建并上传 Release
+        uses: softprops/action-gh-release@v1
         with:
-         name: AnyKernel3_oneplus_ace3_pro_${{ env.KSUVER }}_no_kpm
-         path: kernel_workspace/kernel_platform/dist/AnyKernel3-no_kpm/*
-         
-      - name: Upload AnyKernel3 (KPM)
-        uses: actions/upload-artifact@v4
-        with:
-         name: AnyKernel3_oneplus_ace3_pro_${{ env.KSUVER }}_kpm
-         path: kernel_workspace/kernel_platform/dist/AnyKernel3-kpm/*
+          tag_name: ace3Pro
+          name: Build for ace3Pro
+          body: sukisu，带kpm，带lz4kd
+          draft: false
+          prerelease: false
+          files: |
+            kernel_workspace/kernel_platform/dist/AnyKernel3-no_kpm_${{ env.KSUVER }}_ace3Pro.zip
+            kernel_workspace/kernel_platform/dist/AnyKernel3-kpm_${{ env.KSUVER }}_ace3Pro.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
