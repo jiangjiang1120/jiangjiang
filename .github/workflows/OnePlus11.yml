@@ -235,9 +235,8 @@ jobs:
   
       - name: Build kernel
         run: |
-         cd kernel_workspace
-         mkdir -p out/target/product/kalama
-         LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh kalama gki
+         cd kernel_workspace/kernel_platform
+tools/bazel run --config=fast --config=local --lto=thin //common:kernel_aarch64_dist -- --dist_dir=dist
          
       - name: Generate Kernel lmages
         run: |
