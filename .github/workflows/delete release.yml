@@ -6,7 +6,7 @@ on:
       tags_to_clean:
         description: '要清理的 Release 标签列表（用逗号分隔）'
         required: true
-        default: 'ace2,acepro,ace3,ace3pro,ace3v,ace5,ace5pro,oneplus11,oneplus12,oneplus13,oneplus13t,oneplus12r,padpro'
+        default: 'ace2,ace2Pro,acepro,ace3,ace3Pro,ace3v,ace5,ace5pro,oneplus11,oneplus12,oneplus13,oneplus13t,oneplus12r,padpro'
       delete_mode:
         description: '删除模式（old_versions 或 all_versions）'
         required: true
