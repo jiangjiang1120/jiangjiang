@@ -74,11 +74,9 @@ jobs:
                   # 如果需要删除源代码文件
                   if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                     echo "删除关联的源代码文件..."
-                    ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .url')
-                    for ASSET_URL in $ASSETS; do
-                      if [[ "$ASSET_URL" == *"source.zip"* || "$ASSET_URL" == *"source.tar.gz"* ]]; then
-                        gh api -X DELETE "$ASSET_URL" || echo "删除文件失败，跳过"
-                      fi
+                    ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .id')
+                    for ASSET_ID in $ASSETS; do
+                      gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
                     done
                   fi
                 else
@@ -94,11 +92,9 @@ jobs:
                 # 如果需要删除源代码文件
                 if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                   echo "删除关联的源代码文件..."
-                  ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .url')
-                  for ASSET_URL in $ASSETS; do
-                    if [[ "$ASSET_URL" == *"source.zip"* || "$ASSET_URL" == *"source.tar.gz"* ]]; then
-                      gh api -X DELETE "$ASSET_URL" || echo "删除文件失败，跳过"
-                    fi
+                  ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .id')
+                  for ASSET_ID in $ASSETS; do
+                    gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
                   done
                 fi
               done
