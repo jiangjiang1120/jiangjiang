@@ -1,4 +1,4 @@
-name: 批量删除指定标签中的旧版本或全部版本
+name: 批量删除指定标签中的旧版本资产文件
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ permissions:
   contents: write  # 需要写入仓库内容的权限
 
 jobs:
-  delete-releases:
+  delete-assets:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,16 +29,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gh jq
 
-      - name: 批量清理指定标签中的版本
+      - name: 批量清理指定标签中的旧版本资产文件
         env:
           REPO: ${{ github.repository }}  # 当前仓库
           TAGS_TO_CLEAN: ${{ inputs.tags_to_clean }}  # 要清理的标签列表
           DELETE_MODE: ${{ inputs.delete_mode }}  # 删除模式
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub Actions 提供的 GITHUB_TOKEN
         run: |
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at}')
+          RELEASES=$(gh api repos/$REPO/releases -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
@@ -55,23 +56,45 @@ jobs:
             TAG_RELEASES=$(echo "$RELEASES" | jq -r --arg TAG "$TAG" '. | select(.tag_name == $TAG) | .id, .created_at' | paste - - | sort -r -k2 | cut -f1)
 
             if [ "$DELETE_MODE" == "old_versions" ]; then
-              # 保留最新的一个版本，删除其他旧版本
+              # 保留最新的一个版本，删除其他旧版本的资产文件
               DELETE_COUNT=0
               for RELEASE_ID in $TAG_RELEASES; do
                 if [ $DELETE_COUNT -ge 1 ]; then  # 保留第一个版本
-                  echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
-                  gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+                  echo "删除 Release ID: $RELEASE_ID (标签: $TAG) 的资产文件"
+
+                  # 获取当前 Release 的所有资产文件
+                  ASSETS=$(gh api repos/$REPO/releases/$RELEASE_ID/assets -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, name: .name}')
+                  if [ -n "$ASSETS" ]; then
+                    echo "找到资产文件："
+                    echo "$ASSETS" | jq -r '.name'
+                    for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
+                      ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
+                      echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
+                      gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GH_TOKEN" || echo "删除文件失败，跳过"
+                    done
+                  fi
                 else
                   DELETE_COUNT=$((DELETE_COUNT + 1))
                 fi
               done
             elif [ "$DELETE_MODE" == "all_versions" ]; then
-              # 删除所有版本
+              # 删除所有版本的资产文件
               for RELEASE_ID in $TAG_RELEASES; do
-                echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
-                gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+                echo "删除 Release ID: $RELEASE_ID (标签: $TAG) 的资产文件"
+
+                # 获取当前 Release 的所有资产文件
+                ASSETS=$(gh api repos/$REPO/releases/$RELEASE_ID/assets -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, name: .name}')
+                if [ -n "$ASSETS" ]; then
+                  echo "找到资产文件："
+                  echo "$ASSETS" | jq -r '.name'
+                  for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
+                    ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
+                    echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
+                    gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GH_TOKEN" || echo "删除文件失败，跳过"
+                  done
+                fi
               done
             fi
           done
 
-          echo "指定标签中的版本清理完成。"
+          echo "指定标签中的版本资产文件清理完成。"
