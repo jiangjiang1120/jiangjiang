@@ -15,10 +15,6 @@ on:
         options:
           - old_versions
           - all_versions
-
-permissions:
-  contents: write
-
 jobs:
   delete-releases:
     runs-on: ubuntu-latest
@@ -38,39 +34,35 @@ jobs:
           TAGS_TO_CLEAN: ${{ github.event.inputs.tags_to_clean }}
           DELETE_MODE: ${{ github.event.inputs.delete_mode }}
         run: |
-          set -e
+          set -ex
 
-          echo "获取仓库 $REPO 的所有 Releases（处理分页）..."
-          RELEASES=$(gh api --paginate repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at}')
-
-          if [ -z "$RELEASES" ]; then
-            echo "未找到任何 Releases，退出。"
-            exit 0
-          fi
+          echo "===== 获取仓库 $REPO 的所有 Releases ====="
+          gh api --paginate repos/$REPO/releases | jq . > releases.json
+          cat releases.json
 
           IFS=',' read -r -a TAG_ARRAY <<< "$TAGS_TO_CLEAN"
 
           for TAG in "${TAG_ARRAY[@]}"; do
-            echo "处理标签: $TAG"
+            echo "===== 处理标签: $TAG ====="
 
-            TAG_RELEASES=$(echo "$RELEASES" | jq -s -r --arg TAG "$TAG" '.[] | select(.tag_name == $TAG) | .id, .created_at' | paste - - | sort -r -k2 | cut -f1)
+            # 直接通过 API 筛选当前标签的 Releases
+            TAG_RELEASES=$(gh api --paginate repos/$REPO/releases | jq -r --arg TAG "$TAG" '.[] | select(.tag_name == $TAG) | .id')
 
             if [ -z "$TAG_RELEASES" ]; then
-              echo "标签 $TAG 无 Releases，跳过。"
+              echo "标签 $TAG 无关联的 Releases，跳过。"
               continue
             fi
 
             if [ "$DELETE_MODE" == "old_versions" ]; then
-              DELETE_COUNT=0
-              for RELEASE_ID in $TAG_RELEASES; do
-                if [ $DELETE_COUNT -ge 1 ]; then
-                  echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
-                  gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
-                else
-                  DELETE_COUNT=$((DELETE_COUNT + 1))
-                fi
+              echo "保留最新版本，删除旧版本..."
+              # 转换为数组并保留第一个元素
+              RELEASE_IDS=($TAG_RELEASES)
+              for ((i=1; i<${#RELEASE_IDS[@]}; i++)); do
+                echo "删除 Release ID: ${RELEASE_IDS[i]} (标签: $TAG)"
+                gh api -X DELETE "repos/$REPO/releases/${RELEASE_IDS[i]}" || echo "删除失败，跳过"
               done
             elif [ "$DELETE_MODE" == "all_versions" ]; then
+              echo "删除所有版本..."
               for RELEASE_ID in $TAG_RELEASES; do
                 echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
                 gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
@@ -78,4 +70,4 @@ jobs:
             fi
           done
 
-          echo "指定标签中的版本清理完成。"
+          echo "操作完成。"
