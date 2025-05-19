@@ -34,20 +34,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gh jq
 
-      - name: 认证 GitHub CLI
-        run: echo "${{ secrets.GITHUB_PAT }}" | gh auth login --with-token
-
       - name: 批量清理指定标签中的版本，并可选删除关联的源代码文件
         env:
           REPO: ${{ github.repository }}  # 当前仓库
           TAGS_TO_CLEAN: ${{ inputs.tags_to_clean }}  # 要清理的标签列表
           DELETE_MODE: ${{ inputs.delete_mode }}  # 删除模式
           DELETE_SOURCE_FILES: ${{ inputs.delete_source_files }}  # 是否删除源代码文件
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用默认的 GITHUB_TOKEN
         run: |
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
+          RELEASES=$(gh api repos/$REPO/releases -H "Authorization: token $GITHUB_TOKEN" | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
@@ -69,14 +67,14 @@ jobs:
               for RELEASE_ID in $TAG_RELEASES; do
                 if [ $DELETE_COUNT -ge 1 ]; then  # 保留第一个版本
                   echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
-                  gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+                  gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" -H "Authorization: token $GITHUB_TOKEN" || echo "删除失败，跳过"
 
                   # 如果需要删除源代码文件
                   if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                     echo "删除关联的源代码文件..."
                     ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .id')
                     for ASSET_ID in $ASSETS; do
-                      gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
+                      gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GITHUB_TOKEN" || echo "删除文件失败，跳过"
                     done
                   fi
                 else
@@ -87,14 +85,14 @@ jobs:
               # 删除所有版本
               for RELEASE_ID in $TAG_RELEASES; do
                 echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
-                gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+                gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" -H "Authorization: token $GITHUB_TOKEN" || echo "删除失败，跳过"
 
                 # 如果需要删除源代码文件
                 if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                   echo "删除关联的源代码文件..."
                   ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .id')
                   for ASSET_ID in $ASSETS; do
-                    gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
+                    gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GITHUB_TOKEN" || echo "删除文件失败，跳过"
                   done
                 fi
               done
