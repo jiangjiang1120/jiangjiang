@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 安装 GitHub CLI 和 jq
+      - name: 安装 jq
         run: |
           sudo apt-get update
-          sudo apt-get install -y gh jq
+          sudo apt-get install -y jq
 
       - name: 批量清理指定标签中的旧版本资产文件
         env:
@@ -39,7 +39,7 @@ jobs:
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
+          RELEASES=$(curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases" | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
@@ -63,14 +63,14 @@ jobs:
                   echo "删除 Release ID: $RELEASE_ID (标签: $TAG) 的资产文件"
 
                   # 获取当前 Release 的所有资产文件
-                  ASSETS=$(gh api repos/$REPO/releases/$RELEASE_ID/assets -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, name: .name}')
+                  ASSETS=$(curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/$RELEASE_ID/assets" | jq -r '.[] | {id: .id, name: .name}')
                   if [ -n "$ASSETS" ]; then
                     echo "找到资产文件："
                     echo "$ASSETS" | jq -r '.name'
                     for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
                       ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
                       echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
-                      gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GH_TOKEN" || echo "删除文件失败，跳过"
+                      curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
                     done
                   fi
                 else
@@ -83,14 +83,14 @@ jobs:
                 echo "删除 Release ID: $RELEASE_ID (标签: $TAG) 的资产文件"
 
                 # 获取当前 Release 的所有资产文件
-                ASSETS=$(gh api repos/$REPO/releases/$RELEASE_ID/assets -H "Authorization: token $GH_TOKEN" | jq -r '.[] | {id: .id, name: .name}')
+                ASSETS=$(curl -s -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/$RELEASE_ID/assets" | jq -r '.[] | {id: .id, name: .name}')
                 if [ -n "$ASSETS" ]; then
                   echo "找到资产文件："
                   echo "$ASSETS" | jq -r '.name'
                   for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
                     ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
                     echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
-                    gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID" -H "Authorization: token $GH_TOKEN" || echo "删除文件失败，跳过"
+                    curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
                   done
                 fi
               done
