@@ -41,7 +41,7 @@ jobs:
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | .id, .tag_name, .created_at')
+          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
