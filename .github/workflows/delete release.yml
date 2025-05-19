@@ -35,7 +35,7 @@ jobs:
           sudo apt-get install -y gh jq
 
       - name: 认证 GitHub CLI
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+        run: echo "${{ secrets.GITHUB_PAT }}" | gh auth login --with-token
 
       - name: 批量清理指定标签中的版本，并可选删除关联的源代码文件
         env:
