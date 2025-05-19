@@ -47,7 +47,7 @@ jobs:
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, upload_url: .upload_url}')
+          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, assets: .assets}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
@@ -74,11 +74,12 @@ jobs:
                   # 如果需要删除源代码文件
                   if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                     echo "删除关联的源代码文件..."
-                    UPLOAD_URL=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .upload_url')
-                    if [ -n "$UPLOAD_URL" ]; then
-                      gh api -X DELETE "$UPLOAD_URL?name=source.zip" || echo "删除 source.zip 失败，跳过"
-                      gh api -X DELETE "$UPLOAD_URL?name=source.tar.gz" || echo "删除 source.tar.gz 失败，跳过"
-                    fi
+                    ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .url')
+                    for ASSET_URL in $ASSETS; do
+                      if [[ "$ASSET_URL" == *"source.zip"* || "$ASSET_URL" == *"source.tar.gz"* ]]; then
+                        gh api -X DELETE "$ASSET_URL" || echo "删除文件失败，跳过"
+                      fi
+                    done
                   fi
                 else
                   DELETE_COUNT=$((DELETE_COUNT + 1))
@@ -93,11 +94,12 @@ jobs:
                 # 如果需要删除源代码文件
                 if [ "$DELETE_SOURCE_FILES" == "true" ]; then
                   echo "删除关联的源代码文件..."
-                  UPLOAD_URL=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .upload_url')
-                  if [ -n "$UPLOAD_URL" ]; then
-                    gh api -X DELETE "$UPLOAD_URL?name=source.zip" || echo "删除 source.zip 失败，跳过"
-                    gh api -X DELETE "$UPLOAD_URL?name=source.tar.gz" || echo "删除 source.tar.gz 失败，跳过"
-                  fi
+                  ASSETS=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .assets[] | .url')
+                  for ASSET_URL in $ASSETS; do
+                    if [[ "$ASSET_URL" == *"source.zip"* || "$ASSET_URL" == *"source.tar.gz"* ]]; then
+                      gh api -X DELETE "$ASSET_URL" || echo "删除文件失败，跳过"
+                    fi
+                  done
                 fi
               done
             fi
