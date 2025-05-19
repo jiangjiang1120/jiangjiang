@@ -1,0 +1,73 @@
+name: 批量删除指定标签中的旧版本或全部版本
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags_to_clean:
+        description: '要清理的 Release 标签列表（用逗号分隔）'
+        required: true
+        default: 'ace2,ace2Pro,acepro,ace3,ace3Pro,ace3v,ace5,ace5pro,oneplus11,oneplus12,oneplus13,oneplus13t,oneplus12r,padpro'
+      delete_mode:
+        description: '删除模式（old_versions 或 all_versions）'
+        required: true
+        default: 'old_versions'
+        type: choice
+        options:
+          - old_versions
+          - all_versions
+jobs:
+  delete-releases:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 安装 GitHub CLI 和 jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: 认证 GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: 批量清理指定标签中的版本
+        env:
+          REPO: ${{ github.repository }}
+          TAGS_TO_CLEAN: ${{ github.event.inputs.tags_to_clean }}
+          DELETE_MODE: ${{ github.event.inputs.delete_mode }}
+        run: |
+          set -ex
+
+          echo "===== 获取仓库 $REPO 的所有 Releases ====="
+          gh api --paginate repos/$REPO/releases | jq . > releases.json
+          cat releases.json
+
+          IFS=',' read -r -a TAG_ARRAY <<< "$TAGS_TO_CLEAN"
+
+          for TAG in "${TAG_ARRAY[@]}"; do
+            echo "===== 处理标签: $TAG ====="
+
+            # 直接通过 API 筛选当前标签的 Releases
+            TAG_RELEASES=$(gh api --paginate repos/$REPO/releases | jq -r --arg TAG "$TAG" '.[] | select(.tag_name == $TAG) | .id')
+
+            if [ -z "$TAG_RELEASES" ]; then
+              echo "标签 $TAG 无关联的 Releases，跳过。"
+              continue
+            fi
+
+            if [ "$DELETE_MODE" == "old_versions" ]; then
+              echo "保留最新版本，删除旧版本..."
+              # 转换为数组并保留第一个元素
+              RELEASE_IDS=($TAG_RELEASES)
+              for ((i=1; i<${#RELEASE_IDS[@]}; i++)); do
+                echo "删除 Release ID: ${RELEASE_IDS[i]} (标签: $TAG)"
+                gh api -X DELETE "repos/$REPO/releases/${RELEASE_IDS[i]}" || echo "删除失败，跳过"
+              done
+            elif [ "$DELETE_MODE" == "all_versions" ]; then
+              echo "删除所有版本..."
+              for RELEASE_ID in $TAG_RELEASES; do
+                echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
+                gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+              done
+            fi
+          done
+
+          echo "操作完成。"
