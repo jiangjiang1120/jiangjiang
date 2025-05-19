@@ -70,7 +70,12 @@ jobs:
                     for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
                       ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
                       echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
-                      curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
+                      DELETE_RESPONSE=$(curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID")
+                      if [ -z "$DELETE_RESPONSE" ]; then
+                        echo "成功删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
+                      else
+                        echo "删除文件失败，响应内容：$DELETE_RESPONSE"
+                      fi
                     done
                   fi
                 else
@@ -90,7 +95,12 @@ jobs:
                   for ASSET in $(echo "$ASSETS" | jq -r '.name'); do
                     ASSET_ID=$(echo "$ASSETS" | jq -r --arg ASSET "$ASSET" '. | select(.name == $ASSET) | .id')
                     echo "删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
-                    curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID" || echo "删除文件失败，跳过"
+                    DELETE_RESPONSE=$(curl -s -X DELETE -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/releases/assets/$ASSET_ID")
+                    if [ -z "$DELETE_RESPONSE" ]; then
+                      echo "成功删除资产文件 ID: $ASSET_ID (文件名: $ASSET)"
+                    else
+                      echo "删除文件失败，响应内容：$DELETE_RESPONSE"
+                    fi
                   done
                 fi
               done
