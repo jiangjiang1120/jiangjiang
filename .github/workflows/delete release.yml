@@ -1,4 +1,4 @@
-name: 批量删除指定标签中的旧版本或全部版本
+name: 批量删除指定标签中的旧版本或全部版本，并可选删除关联的源代码文件
 
 on:
   workflow_dispatch:
@@ -15,6 +15,11 @@ on:
         options:
           - old_versions
           - all_versions
+      delete_source_files:
+        description: '是否删除关联的源代码文件（source.zip 和 source.tar.gz）'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: write  # 需要写入仓库内容的权限
@@ -32,16 +37,17 @@ jobs:
       - name: 认证 GitHub CLI
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-      - name: 批量清理指定标签中的版本
+      - name: 批量清理指定标签中的版本，并可选删除关联的源代码文件
         env:
           REPO: ${{ github.repository }}  # 当前仓库
           TAGS_TO_CLEAN: ${{ inputs.tags_to_clean }}  # 要清理的标签列表
           DELETE_MODE: ${{ inputs.delete_mode }}  # 删除模式
+          DELETE_SOURCE_FILES: ${{ inputs.delete_source_files }}  # 是否删除源代码文件
         run: |
           set -e
 
           echo "获取仓库 $REPO 的所有 Releases..."
-          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at}')
+          RELEASES=$(gh api repos/$REPO/releases | jq -r '.[] | {id: .id, tag_name: .tag_name, created_at: .created_at, upload_url: .upload_url}')
           if [ -z "$RELEASES" ]; then
             echo "未找到任何 Releases，退出。"
             exit 0
@@ -64,6 +70,16 @@ jobs:
                 if [ $DELETE_COUNT -ge 1 ]; then  # 保留第一个版本
                   echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
                   gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+
+                  # 如果需要删除源代码文件
+                  if [ "$DELETE_SOURCE_FILES" == "true" ]; then
+                    echo "删除关联的源代码文件..."
+                    UPLOAD_URL=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .upload_url')
+                    if [ -n "$UPLOAD_URL" ]; then
+                      gh api -X DELETE "$UPLOAD_URL?name=source.zip" || echo "删除 source.zip 失败，跳过"
+                      gh api -X DELETE "$UPLOAD_URL?name=source.tar.gz" || echo "删除 source.tar.gz 失败，跳过"
+                    fi
+                  fi
                 else
                   DELETE_COUNT=$((DELETE_COUNT + 1))
                 fi
@@ -73,8 +89,18 @@ jobs:
               for RELEASE_ID in $TAG_RELEASES; do
                 echo "删除 Release ID: $RELEASE_ID (标签: $TAG)"
                 gh api -X DELETE "repos/$REPO/releases/$RELEASE_ID" || echo "删除失败，跳过"
+
+                # 如果需要删除源代码文件
+                if [ "$DELETE_SOURCE_FILES" == "true" ]; then
+                  echo "删除关联的源代码文件..."
+                  UPLOAD_URL=$(echo "$RELEASES" | jq -r --arg RELEASE_ID "$RELEASE_ID" '. | select(.id == ($RELEASE_ID | tonumber)) | .upload_url')
+                  if [ -n "$UPLOAD_URL" ]; then
+                    gh api -X DELETE "$UPLOAD_URL?name=source.zip" || echo "删除 source.zip 失败，跳过"
+                    gh api -X DELETE "$UPLOAD_URL?name=source.tar.gz" || echo "删除 source.tar.gz 失败，跳过"
+                  fi
+                fi
               done
             fi
           done
 
-          echo "指定标签中的版本清理完成。"
+          echo "指定标签中的版本及关联的源代码文件清理完成。"
