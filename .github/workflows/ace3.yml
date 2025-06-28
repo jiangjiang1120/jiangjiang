@@ -10,10 +10,6 @@ on:
         description: "配置文件"
         required: true
         default: 'oneplus_ace3_v'
-      CPUD:
-        description: "处理器代号"
-        required: true
-        default: 'kalama'
       ANDROID_VERSION:
         description: "内核安卓版本"
         required: true
@@ -26,22 +22,6 @@ on:
         description: "修改内核名称"
         required: true
         default: '-android13-11-o-g1132d864665d'
-      kernelsu_variant:
-        description: "选择 KSU"
-        required: true
-        type: choice
-        options:
-          - SukiSU
-          - SukiSU-Ultra
-        default: SukiSU-Ultra
-      kernelsu_version:
-        description: "选择 KSU 版本"
-        required: true
-        type: choice
-        options:
-          - tag
-          - main
-        default: main
       SUSFS_ENABLED:
         description: "添加 SUSFS"
         required: true
@@ -55,6 +35,10 @@ on:
           - enable
           - disable
         default: enable
+      sukisu_tag:
+        description: "自定义版本来源后缀（如:见清）"
+        required: false
+        default: "见清"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -98,36 +82,26 @@ jobs:
          sed -i 's/ -dirty//g' kernel_platform/msm-kernel/scripts/setlocalversion
          sed -i 's/ -dirty//g' kernel_platform/external/dtc/scripts/setlocalversion
       
-      - name: SukiSU-Ultra & SukiSU version
-        if: ${{ github.event.inputs.kernelsu_variant == 'SukiSU-Ultra' || github.event.inputs.kernelsu_variant == 'SukiSU' }}
+      - name: Export suffix
         run: |
-          if [[ "${{ github.event.inputs.kernelsu_version }}" == "tag" ]]; then
-            echo "BRANCH=-" >> $GITHUB_ENV
-          elif [[ "${{ github.event.inputs.kernelsu_version }}" == "main" ]]; then
-            echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
-          fi
-          
-      - name: Add SukiSU-Ultra
-        if: ${{ github.event.inputs.kernelsu_variant == 'SukiSU-Ultra' }}
+          echo "TAG_SUFFIX=${{ github.event.inputs.sukisu_tag }}" >> $GITHUB_ENV
+         
+      - name: Inject dynamic SukiSU string version
         run: |
-          cd kernel_workspace/kernel_platform
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
-          cd ./KernelSU
-          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
-          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-          export KSU_VERSION=$KSU_VERSION
-          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
-
-      - name: Add SukiSU
-        if: ${{ github.event.inputs.kernelsu_variant == 'SukiSU' }}
-        run: |
-          cd kernel_workspace/kernel_platform
-          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash ${{ env.BRANCH }}
-          cd ./KernelSU
-          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
-          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-          export KSU_VERSION=$KSU_VERSION
-          sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+         cd kernel_workspace/kernel_platform
+         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+         cd KernelSU
+         # 获取自定义后缀（如：见清）
+         TAG_SUFFIX="${{ github.event.inputs.sukisu_tag }}"
+         # 使用正确变量名 KSU_VERSION_API 替换函数体
+         sed -i "/^define get_ksu_version_full$/,/^endef$/c\
+         define get_ksu_version_full\\
+         v\$(KSU_VERSION_API)-sukisu-\$(KSU_VERSION)-by-$TAG_SUFFIX\\
+         endef" kernel/Makefile
+         echo "✅ Injected custom version: v\$(KSU_VERSION_API)-sukisu-\$(KSU_VERSION)-by-$TAG_SUFFIX"
+         KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10700)
+         echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+         export KSU_VERSION=$KSU_VERSION
           
       - name: Set up susfs
         run: |
