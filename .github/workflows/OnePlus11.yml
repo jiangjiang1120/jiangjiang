@@ -31,14 +31,6 @@ on:
         required: true
         type: boolean
         default: true
-      VFS_patch_ENABLED:
-        description: "添加 vfs 补丁（新钩子）？"
-        required: true
-        type: choice
-        options:
-          - enable
-          - disable
-        default: enable
 jobs:
   build:
     runs-on: ubuntu-latest
