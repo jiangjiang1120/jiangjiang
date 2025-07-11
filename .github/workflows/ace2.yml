@@ -22,15 +22,6 @@ on:
         description: "修改内核名称"
         required: true
         default: '-android12-9-0-g0a04ff961c85'
-      SUSFS_ENABLED:
-        description: "添加 SUSFS"
-        required: true
-        type: boolean
-        default: true
-      VFS_patch_ENABLED:
-        description: "添加 vfs 补丁（新钩子）？"
-        required: true
-        type: choice
       sukisu_tag:
         description: "自定义版本来源后缀（如:见清）"
         required: false
@@ -150,12 +141,9 @@ jobs:
           #echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
 
           # Add VFS configuration settings
-          if [[ "${{ github.event.inputs.VFS_patch_ENABLED }}" == 'enable' ]]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          else
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig    
             echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
           
           # Add SUSFS configuration settings
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
